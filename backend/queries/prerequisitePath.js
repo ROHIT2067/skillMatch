@@ -6,7 +6,7 @@ const FIND_PREREQUISITE_PATH = `
   MATCH (source:Topic {id: $fromId}),
         (target:Topic {id: $toId})
   MATCH p = shortestPath(
-    (source)-[:PREREQUISITE_OF*2..]->(target)
+    (source)-[:PREREQUISITE_OF*1..]->(target)
   )
   RETURN
     [node IN nodes(p) | {
@@ -27,7 +27,7 @@ export async function findPrerequisitePath(fromId, toId) {
 
     return result.records.map((record) => ({
       path: record.get("path"),
-      hops: record.get("hops"),
+      hops: record.get("hops").toNumber(),
     }));
   } finally {
     await session.close();

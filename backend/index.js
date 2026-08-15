@@ -3,11 +3,18 @@ import topicsRouter from "./routes/topicsRoute.js";
 import learnersRouter from "./routes/learnersRoute.js";
 import pathRouter from "./routes/pathRoute.js";
 import gapsRouter from "./routes/gapsRoute.js";
+import cors from "cors";
 
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 
+app.get("/health", (req, res) => {
+  res.json({
+    status: "ok",
+  });
+});
 
 app.use("/learners", learnersRouter);
 app.use("/path", pathRouter);
