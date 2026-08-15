@@ -114,20 +114,10 @@ const progress = [
   },
 ];
 
-const sessions = [
-  { id: "session-2025-01", date: "2025-01-13", notes: "DSA foundations and complexity analysis.", topicIds: ["dsa-complexity", "dsa-arrays"] },
-  { id: "session-2025-02", date: "2025-01-20", notes: "Relational foundations and basic querying.", topicIds: ["sql-relational-model", "sql-select-filter"] },
-  { id: "session-2025-03", date: "2025-01-27", notes: "TypeScript foundations and object modeling.", topicIds: ["ts-javascript-foundations", "ts-basic-types", "ts-interfaces-aliases"] },
-  { id: "session-2025-04", date: "2025-02-03", notes: "React component fundamentals.", topicIds: ["react-components", "react-props-state"] },
-  { id: "session-2025-05", date: "2025-02-10", notes: "Recursive structures and tree traversal.", topicIds: ["dsa-recursion", "dsa-trees"] },
-  { id: "session-2025-06", date: "2025-02-17", notes: "Combining and summarizing relational data.", topicIds: ["sql-joins", "sql-aggregation"] },
-];
-
 const constraintQueries = [
   "CREATE CONSTRAINT topic_id_unique IF NOT EXISTS FOR (topic:Topic) REQUIRE topic.id IS UNIQUE",
   "CREATE CONSTRAINT cluster_id_unique IF NOT EXISTS FOR (cluster:TopicCluster) REQUIRE cluster.id IS UNIQUE",
   "CREATE CONSTRAINT learner_id_unique IF NOT EXISTS FOR (learner:Learner) REQUIRE learner.id IS UNIQUE",
-  "CREATE CONSTRAINT session_id_unique IF NOT EXISTS FOR (session:Session) REQUIRE session.id IS UNIQUE",
 ];
 
 function validateProgressData() {
@@ -148,13 +138,13 @@ function toNumber(value) {
 async function verifySeed(session) {
   const nodeResult = await session.run(`
     MATCH (node)
-    WHERE node:Topic OR node:TopicCluster OR node:Learner OR node:Session
+    WHERE node:Topic OR node:TopicCluster OR node:Learner
     UNWIND labels(node) AS label
     WITH label, count(*) AS count
     WHERE label IN $labels
     RETURN label, count
     ORDER BY label
-  `, { labels: ["Topic", "TopicCluster", "Learner", "Session"] });
+  `, { labels: ["Topic", "TopicCluster", "Learner"] });
 
   const relationshipResult = await session.run(`
     MATCH ()-[relationship]->()
@@ -162,7 +152,7 @@ async function verifySeed(session) {
     WHERE type IN $types
     RETURN type, count
     ORDER BY type
-  `, { types: ["PREREQUISITE_OF", "BELONGS_TO", "COMPLETED", "PENDING", "COVERED"] });
+  `, { types: ["PREREQUISITE_OF", "BELONGS_TO", "COMPLETED", "PENDING"] });
 
   const orphanResult = await session.run(`
     MATCH (topic:Topic)
@@ -277,18 +267,6 @@ async function seed() {
       MATCH (topic:Topic {id: topicId})
       MERGE (learner)-[:PENDING]->(topic)
     `, { progress });
-
-    console.log("Seeding sessions and covered relationships...");
-    await session.run(`
-      UNWIND $sessions AS row
-      MERGE (trainingSession:Session {id: row.id})
-      SET trainingSession.date = date(row.date),
-          trainingSession.notes = row.notes
-      WITH trainingSession, row
-      UNWIND row.topicIds AS topicId
-      MATCH (topic:Topic {id: topicId})
-      MERGE (trainingSession)-[:COVERED]->(topic)
-    `, { sessions });
 
     console.log("Verifying seeded graph...");
     const summary = await verifySeed(session);
