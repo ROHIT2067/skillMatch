@@ -5,6 +5,8 @@ const FIND_GAP_ANALYSIS = `
   MATCH (learner)-[:PENDING]->(topic:Topic)
   MATCH (topic)-[:BELONGS_TO]->(cluster:TopicCluster)
 
+  WITH cluster, topic
+  ORDER BY topic.name
   WITH cluster, collect(topic) AS topics
 
   RETURN
